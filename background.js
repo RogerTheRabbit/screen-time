@@ -15,23 +15,27 @@ function checkBrowserFocus() {
       return;
     }
     const url = new URL(tab.url);
-    if (time[tab.id] === undefined) {
-      time[tab.id] = {
+    if (time[url.origin] === undefined) {
+      time[url.origin] = {
         time: 0,
         favIconUrl: tab.favIconUrl,
         origin: url.origin,
         hostname: url.hostname,
       };
     } else {
-      time[tab.id].time += (Date.now() - lastCheckedTime) / 1000;
+      time[url.origin].time += (Date.now() - lastCheckedTime) / 1000;
+    }
+    // Sometimes favicons aren't loaded/set in the first pass, so add it if it's missing later
+    if (time[url.origin].favIconUrl === undefined) {
+      time[url.origin].favIconUrl = url.favIconUrl;
     }
     lastCheckedTime = Date.now();
     if (
       limits[url.hostname] !== undefined &&
-      time[tab.id].time > limits[url.hostname]
+      time[url.origin].time > limits[url.hostname]
     ) {
-      console.log("CLOSING TAB", time[tab.id]);
-      chrome.tabs.remove(tab.id);
+      console.log("CLOSING TAB", time[url.origin]);
+      chrome.tabs.remove(url.origin);
     }
     console.log(browser.focused, tab, time);
   });
