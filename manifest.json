@@ -9,7 +9,8 @@
     },
     "permissions": [
         "activeTab",
-        "tabs"
+        "tabs",
+        "storage"
     ],
     "background": {
         "service_worker": "background.js",

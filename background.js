@@ -1,17 +1,38 @@
-
 setInterval(checkBrowserFocus, 1000);
 
-let time = {};
-let limits = {
-  "www.youtube.com": 30,
-};
-let lastCheckedTime = Date.now();
+chrome.storage.local.get().then((localStorage) => {
+  if (localStorage["time"] === undefined) {
+    chrome.storage.local.set({ time: {} });
+  }
+  if (localStorage["limits"] === undefined) {
+    chrome.storage.local.set({
+      limits: {
+        "www.youtube.com": 5,
+      },
+    });
+  }
+  if (localStorage["youtubeUrls"] === undefined) {
+    chrome.storage.local.set({ youtubeUrls: {} });
+  }
+  if (localStorage["lastCheckedTime"] === undefined) {
+    chrome.storage.local.set({ lastCheckedTime: Date.now() });
+  }
+});
 
 function checkBrowserFocus() {
   chrome.windows.getCurrent(async function (browser) {
+    const localStorage = await chrome.storage.local.get();
+    let time = localStorage["time"];
+    let limits = localStorage["limits"];
+    let youtubeUrls = localStorage["youtubeUrls"];
+    let lastCheckedTime = localStorage["lastCheckedTime"];
+
     const tab = await getCurrentTab();
-    if (tab === undefined || browser.focused === false) {
-      lastCheckedTime = Date.now();
+    if (
+      tab === undefined ||
+      (browser.focused === false && tab.audible === false)
+    ) {
+      chrome.storage.local.set({ lastCheckedTime: Date.now() });
       return;
     }
     const url = new URL(tab.url);
@@ -29,15 +50,24 @@ function checkBrowserFocus() {
     if (time[url.origin].favIconUrl === undefined) {
       time[url.origin].favIconUrl = url.favIconUrl;
     }
-    lastCheckedTime = Date.now();
+    chrome.storage.local.set({ lastCheckedTime: Date.now() });
     if (
       limits[url.hostname] !== undefined &&
-      time[url.origin].time > limits[url.hostname]
+      time[url.origin].time > limits[url.hostname] &&
+      youtubeUrls[tab.id] !== undefined &&
+      youtubeUrls[tab.id] !== null &&
+      url.href != youtubeUrls[tab.id]
     ) {
-      console.log("CLOSING TAB", time[url.origin]);
-      chrome.tabs.remove(url.origin);
+      console.log("CLOSING TAB", tab.id, url.origin, time[url.origin]);
+      chrome.tabs.remove(tab.id);
     }
     console.log(browser.focused, tab, time);
+
+    if (url.host !== "newtab") {
+      youtubeUrls[tab.id] = url.href;
+      chrome.storage.local.set({ youtubeUrls: youtubeUrls });
+    }
+    chrome.storage.local.set({ time: time });
   });
 }
 
