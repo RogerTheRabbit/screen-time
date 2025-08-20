@@ -26,13 +26,21 @@ function checkBrowserFocus() {
     let limits = localStorage["limits"];
     let youtubeUrls = localStorage["youtubeUrls"];
     let lastCheckedTime = localStorage["lastCheckedTime"];
+    const now = Date.now();
+
+    // Reset if day has changed
+    if (new Date(now).getDay() !== new Date(lastCheckedTime).getDay()) {
+      // TODO: Write these to some daily report location before clearing
+      chrome.storage.local.set({ time: {}, youtubeUrls: {} });
+      return;
+    }
 
     const tab = await getCurrentTab();
     if (
       tab === undefined ||
       (browser.focused === false && tab.audible === false)
     ) {
-      chrome.storage.local.set({ lastCheckedTime: Date.now() });
+      chrome.storage.local.set({ lastCheckedTime: now });
       return;
     }
     const url = new URL(tab.url);
@@ -44,13 +52,13 @@ function checkBrowserFocus() {
         hostname: url.hostname,
       };
     } else {
-      time[url.origin].time += (Date.now() - lastCheckedTime) / 1000;
+      time[url.origin].time += (now - lastCheckedTime) / 1000;
     }
     // Sometimes favicons aren't loaded/set in the first pass, so add it if it's missing later
     if (time[url.origin].favIconUrl === undefined) {
       time[url.origin].favIconUrl = url.favIconUrl;
     }
-    chrome.storage.local.set({ lastCheckedTime: Date.now() });
+    chrome.storage.local.set({ lastCheckedTime: now });
     if (
       limits[url.hostname] !== undefined &&
       time[url.origin].time > limits[url.hostname] &&
@@ -81,7 +89,10 @@ async function getCurrentTab() {
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   console.log(msg, sender);
   if (msg.type === "refresh") {
-    sendResponse(time);
+    chrome.storage.local.get().then((localStorage) => {
+      sendResponse(localStorage["time"]);
+    });
+
     return true;
   }
 });
