@@ -36,3 +36,17 @@ td {
   width: 1rem;
   height: 1rem;
 }
+
+#pause-button {
+  width: 100%;
+  margin: 0.5rem 0 0 0;
+  padding: 0.5rem;
+  background-color: #FFFFFF;
+  border-radius: 1rem;
+  border: 3px solid #94a3b81a;
+}
+
+
+#pause-button:hover {
+  background-color: #94a3b81a;
+}

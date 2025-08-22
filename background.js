@@ -17,6 +17,9 @@ chrome.storage.local.get().then((localStorage) => {
   if (localStorage["lastCheckedTime"] === undefined) {
     chrome.storage.local.set({ lastCheckedTime: Date.now() });
   }
+  if (localStorage["paused"] === undefined) {
+    chrome.storage.local.set({ paused: false });
+  }
 });
 
 function checkBrowserFocus() {
@@ -26,6 +29,7 @@ function checkBrowserFocus() {
     let limits = localStorage["limits"];
     let youtubeUrls = localStorage["youtubeUrls"];
     let lastCheckedTime = localStorage["lastCheckedTime"];
+    const paused = localStorage["paused"];
     const now = Date.now();
 
     // Reset if day has changed
@@ -34,6 +38,7 @@ function checkBrowserFocus() {
       chrome.storage.local.set({
         time: {},
         youtubeUrls: {},
+        paused: false,
         lastCheckedTime: now,
       });
       return;
@@ -64,6 +69,7 @@ function checkBrowserFocus() {
     }
     chrome.storage.local.set({ lastCheckedTime: now });
     if (
+      !paused &&
       limits[url.hostname] !== undefined &&
       time[url.origin].time > limits[url.hostname] &&
       youtubeUrls[tab.id] !== undefined &&
@@ -93,8 +99,22 @@ async function getCurrentTab() {
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   console.log(msg, sender);
   if (msg.type === "refresh") {
+    chrome.storage.local
+      .get()
+      .then((localStorage) => sendResponse(localStorage["time"]));
+
+    return true;
+  } else if (msg.type === "get-paused") {
+    chrome.storage.local
+      .get()
+      .then((localStorage) => sendResponse(localStorage["paused"]));
+
+    return true;
+  } else if (msg.type === "toggle-paused") {
     chrome.storage.local.get().then((localStorage) => {
-      sendResponse(localStorage["time"]);
+      const newPausedState = !localStorage["paused"];
+      chrome.storage.local.set({ paused: newPausedState });
+      sendResponse(newPausedState);
     });
 
     return true;

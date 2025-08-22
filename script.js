@@ -1,7 +1,21 @@
 chrome.runtime?.sendMessage({ type: "refresh" }, (response) => {
-  console.log("response", response);
+  console.log("refresh response", response);
   setTable(Object.values(response).sort((tabA, tabB) => tabB.time - tabA.time));
 });
+
+chrome.runtime?.sendMessage({ type: "get-paused" }, (response) => {
+  console.log("get-state response", response);
+  setPausedButton(response);
+});
+
+const pasuedButton = document.getElementById("pause-button");
+
+pasuedButton.onclick = () => {
+  chrome.runtime?.sendMessage({ type: "toggle-paused" }, (response) => {
+    console.log("toggle-state response", response);
+    setPausedButton(response);
+  });
+};
 
 function setTable(tabs) {
   const table = document.getElementById("table");
@@ -20,4 +34,8 @@ function setTable(tabs) {
     table.appendChild(hostnameCell);
     table.appendChild(timeCell);
   });
+}
+
+function setPausedButton(state) {
+  pasuedButton.innerText = state ? "unpause" : "pause";
 }
