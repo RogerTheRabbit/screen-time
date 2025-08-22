@@ -31,7 +31,11 @@ function checkBrowserFocus() {
     // Reset if day has changed
     if (new Date(now).getDay() !== new Date(lastCheckedTime).getDay()) {
       // TODO: Write these to some daily report location before clearing
-      chrome.storage.local.set({ time: {}, youtubeUrls: {} });
+      chrome.storage.local.set({
+        time: {},
+        youtubeUrls: {},
+        lastCheckedTime: now,
+      });
       return;
     }
 
