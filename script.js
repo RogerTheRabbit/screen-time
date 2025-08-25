@@ -1,6 +1,10 @@
 chrome.runtime?.sendMessage({ type: "refresh" }, (response) => {
   console.log("refresh response", response);
-  setTable(Object.values(response).sort((tabA, tabB) => tabB.time - tabA.time));
+  const sortedTabs = Object.values(response).sort(
+    (tabA, tabB) => tabB.time - tabA.time
+  );
+  setTable(sortedTabs);
+  setTotalTime(sortedTabs);
 });
 
 chrome.runtime?.sendMessage({ type: "get-paused" }, (response) => {
@@ -34,6 +38,21 @@ function setTable(tabs) {
     table.appendChild(hostnameCell);
     table.appendChild(timeCell);
   });
+}
+
+function setTotalTime(tabs) {
+  const totalTimeText = document.getElementById("total-time");
+  let totalTime = tabs.reduce((total, tab) => {
+    console.log(total);
+    return total + tab.time;
+  }, 0);
+
+  if (totalTime < 3600) {
+    totalTimeText.innerText =
+      totalTime > 60 ? `${Math.floor(totalTime / 60)} minutes` : "< 1 minute";
+  } else {
+    totalTimeText.innerText = `${Math.floor(totalTime / 3600)} hours`;
+  }
 }
 
 function setPausedButton(state) {
